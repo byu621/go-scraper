@@ -7,12 +7,19 @@ import (
 )
 
 func main() {
-	c := colly.NewCollector(
-		colly.AllowedDomains("en.wikipedia.org"),
-	)
-	c.OnHTML(".mw-parser-output", func(e *colly.HTMLElement) {
-		links := e.ChildAttrs("a", "href")
-		fmt.Println(links)
+	count := 1
+
+	c := colly.NewCollector()
+	c.OnHTML(".titleline", func(e *colly.HTMLElement) {
+		fmt.Printf("%4d: %s\n", count, e.Text)
+		count++
 	})
-	c.Visit("https://en.wikipedia.org/wiki/Web_scraping")
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("Visiting", r.URL)
+	})
+
+	c.OnError(func(r *colly.Response, e error) {
+		fmt.Println("error:", e, r.Request.URL, string(r.Body))
+	})
+	c.Visit("https://news.ycombinator.com/news")
 }
