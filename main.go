@@ -9,10 +9,6 @@ import (
 	"github.com/gocolly/colly"
 )
 
-
-
-
-
 func getKeyboards(c *gin.Context) {
 	count := 1
 	var lines []string
@@ -42,11 +38,10 @@ func getKeyboards(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, lines)
 }
 
-
-
 func main() {
 	mongo.PingMongo()
 	mongo.GetData()
+	mongo.InsertPbTechItem()
 
 	router := gin.Default()
 	router.GET("/keyb", getKeyboards)

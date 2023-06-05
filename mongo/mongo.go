@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,13 +15,20 @@ import (
 )
 
 type Restaurant struct {
-	ID           primitive.ObjectID `bson:"_id"`
+	ID           primitive.ObjectID `bson:"_id,omitempty"`
 	Name         string
 	RestaurantId string `bson:"restaurant_id"`
 	Cuisine      string
 	Address      interface{}
 	Borough      string
 	Grades       []interface{}
+}
+
+type PbTechItem struct {
+	ID    primitive.ObjectID `bson:"_id,omitempty"`
+	Name  string             `bson:"name"`
+	Date  time.Time          `bson:"date"`
+	Price int32              `bson:"price"`
 }
 
 func PingMongo() {
@@ -44,6 +52,17 @@ func GetData() {
 		}
 
 		fmt.Println(result.Name)
+	})
+}
+
+func InsertPbTechItem() {
+	executeMongo(func(client *mongo.Client) {
+		coll := client.Database("pbtech_item").Collection("keyboards")
+		newItem := PbTechItem{Name: "ben", Date: time.Now(), Price: 100}
+		_, err := coll.InsertOne(context.TODO(), newItem)
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
