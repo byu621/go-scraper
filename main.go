@@ -2,31 +2,62 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gocolly/colly"
 )
 
-func main() {
+type album struct {
+	ID     string  `json:"id"`
+	Title  string  `json:"title"`
+	Artist string  `json:"artist"`
+	Price  float64 `json:"price"`
+}
+
+func getAlbums(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, albums)
+}
+
+func getKeyboards(c *gin.Context) {
 	count := 1
+	var lines []string
 
-	c := colly.NewCollector()
+	co := colly.NewCollector()
 
-	c.OnHTML(".row", func(e *colly.HTMLElement) {
+	co.OnHTML(".row", func(e *colly.HTMLElement) {
 		productLinks := e.ChildAttrs(".js-product-link", "title")
 		if len(productLinks) == 1 {
 			price := e.ChildText(".ginc .full-price")
-			fmt.Printf("%4d: %8s %s\n", count, price, productLinks[0])
+			line := fmt.Sprintf("%4d: %8s %s", count, price, productLinks[0])
+			fmt.Println(line)
+			lines = append(lines, line)
 			count++
 		}
 	})
 
-	c.OnRequest(func(r *colly.Request) {
+	co.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL)
 	})
 
-	c.OnError(func(r *colly.Response, e error) {
+	co.OnError(func(r *colly.Response, e error) {
 		fmt.Println("error:", e, r.Request.URL, string(r.Body))
 	})
 
-	c.Visit("https://www.pbtech.co.nz/category/peripherals/keyboards/gaming-keyboards")
+	co.Visit("https://www.pbtech.co.nz/category/peripherals/keyboards/gaming-keyboards")
+	c.IndentedJSON(http.StatusOK, lines)
+}
+
+var albums = []album{
+	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
+	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
+	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
+}
+
+func main() {
+	router := gin.Default()
+	router.GET("/albums", getAlbums)
+	router.GET("/keyb", getKeyboards)
+
+	router.Run("localhost:8080")
 }
