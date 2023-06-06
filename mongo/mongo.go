@@ -14,59 +14,48 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Restaurant struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty"`
-	Name         string
-	RestaurantId string `bson:"restaurant_id"`
-	Cuisine      string
-	Address      interface{}
-	Borough      string
-	Grades       []interface{}
-}
+var client *mongo.Client
 
 type PbTechItem struct {
 	ID    primitive.ObjectID `bson:"_id,omitempty"`
 	Name  string             `bson:"name"`
-	Date  time.Time          `bson:"date"`
-	Price int32              `bson:"price"`
+	Date  []string           `bson:"date"`
+	Price []int              `bson:"price"`
 }
 
-func PingMongo() {
-	executeMongo(func(client *mongo.Client) {
-		fmt.Println("func")
-	})
+func ProcessData(itemName string, price int) bool {
+	item, _ := checkIfItemExists(itemName)
+	if item != nil {
+		return false
+	}
+	insertPbTechItem(itemName, price)
+	return true
 }
 
-func GetData() {
-	executeMongo(func(client *mongo.Client) {
-		coll := client.Database("sample_restaurants").Collection("restaurants")
-		filter := bson.D{{"name", "Bagels N Buns"}}
-		var result Restaurant
-		err := coll.FindOne(context.TODO(), filter).Decode(&result)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				// This error means your query did not match any documents.
-				return
-			}
-			panic(err)
-		}
-
-		fmt.Println(result.Name)
-	})
+func checkIfItemExists(itemName string) (*PbTechItem, error) {
+	coll := client.Database("pbtech_item").Collection("keyboards")
+	filter := bson.D{{Key: "name", Value: itemName}}
+	var result PbTechItem
+	err := coll.FindOne(context.TODO(), filter).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		return nil, err
+	}
+	if err != nil {
+		panic(err)
+	}
+	return &result, nil
 }
 
-func InsertPbTechItem() {
-	executeMongo(func(client *mongo.Client) {
-		coll := client.Database("pbtech_item").Collection("keyboards")
-		newItem := PbTechItem{Name: "ben", Date: time.Now(), Price: 100}
-		_, err := coll.InsertOne(context.TODO(), newItem)
-		if err != nil {
-			panic(err)
-		}
-	})
+func insertPbTechItem(itemName string, price int) {
+	coll := client.Database("pbtech_item").Collection("keyboards")
+	newItem := PbTechItem{Name: itemName, Date: []string{getDateString()}, Price: []int{price}}
+	_, err := coll.InsertOne(context.TODO(), newItem)
+	if err != nil {
+		panic(err)
+	}
 }
 
-func executeMongo(f func(*mongo.Client)) {
+func ConnectToMongo() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -76,17 +65,24 @@ func executeMongo(f func(*mongo.Client)) {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(os.Getenv("MONGODB_URI")).SetServerAPIOptions(serverAPI)
 	// Create a new client and connect to the server
-	client, err := mongo.Connect(context.TODO(), opts)
+	client, err = mongo.Connect(context.TODO(), opts)
 	if err != nil {
 		panic(err)
 	}
+}
 
-	// fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
-
-	f(client)
-
-	if err = client.Disconnect(context.TODO()); err != nil {
+func getDateString() string {
+	nzLocation, err := time.LoadLocation("Pacific/Auckland")
+	if err != nil {
+		fmt.Println("Error loading location:", err)
 		panic(err)
 	}
-	// fmt.Println("Successfully disconnected")
+
+	nzTime := time.Now().In(nzLocation)
+
+	day := nzTime.Day()
+	month := nzTime.Month()
+	year := nzTime.Year()
+
+	return fmt.Sprintf("%02d-%02d-%d", day, month, year)
 }
