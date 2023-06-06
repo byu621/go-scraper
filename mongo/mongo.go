@@ -23,13 +23,20 @@ type PbTechItem struct {
 	Price []int              `bson:"price"`
 }
 
-func ProcessData(itemName string, price int) bool {
+func ProcessData(itemName string, price int) (bool, string) {
 	item, _ := checkIfItemExists(itemName)
 	if item != nil {
-		return false
+		currentPrice := item.Price[len(item.Price)-1]
+		if currentPrice == price {
+			return false, ""
+		}
+		addNewPrice(item.ID, price)
+
+		money := float64(currentPrice) / 100.0
+		return true, fmt.Sprintf("ADD_PRICE OLD_PRICE: $%.2f", money)
 	}
 	insertPbTechItem(itemName, price)
-	return true
+	return true, "NEW_ITEM"
 }
 
 func checkIfItemExists(itemName string) (*PbTechItem, error) {
@@ -50,6 +57,21 @@ func insertPbTechItem(itemName string, price int) {
 	coll := client.Database("pbtech_item").Collection("keyboards")
 	newItem := PbTechItem{Name: itemName, Date: []string{getDateString()}, Price: []int{price}}
 	_, err := coll.InsertOne(context.TODO(), newItem)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func addNewPrice(id primitive.ObjectID, price int) {
+	coll := client.Database("pbtech_item").Collection("keyboards")
+	filter := bson.D{{"_id", id}}
+	update := bson.M{
+		"$push": bson.M{
+			"price": price,
+			"date":  getDateString(),
+		},
+	}
+	_, err := coll.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		panic(err)
 	}

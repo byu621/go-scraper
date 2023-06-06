@@ -26,10 +26,10 @@ func getKeyboards(c *gin.Context) {
 			priceNoDollarSign := price[1:]
 			priceNoDecimal := strings.ReplaceAll(priceNoDollarSign, ".", "")
 			priceInt, _ := strconv.Atoi(priceNoDecimal)
-			isDbUpdated := mongo.ProcessData(name, priceInt)
+			isDbUpdated, prefix := mongo.ProcessData(name, priceInt)
 
 			if isDbUpdated {
-				line := fmt.Sprintf("%4d: %8s %s", count, price, name)
+				line := fmt.Sprintf("%s: %4d: %8s %s", prefix, count, price, name)
 				lines = append(lines, line)
 				count++
 			}
