@@ -82,7 +82,11 @@ func main() {
 
 	var port = envPortOr("8080")
 
-	router.Run(fmt.Sprintf("localhost%s", port))
+	if os.Getenv("ENVIRONMENT") == "DEVELOPMENT" {
+		router.Run(fmt.Sprintf("localhost%s", port))
+	} else {
+		router.Run(port)
+	}
 }
 
 func envPortOr(port string) string {
