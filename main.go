@@ -11,6 +11,12 @@ import (
 	"github.com/gocolly/colly"
 )
 
+func convertToMoney(price int) string {
+	dollar := float64(price) / 100.0
+	dollarStr := strconv.FormatFloat(dollar, 'f', -1, 64)
+	return fmt.Sprintf("$%s", dollarStr)
+}
+
 func getKeyboards(c *gin.Context) {
 	count := 1
 	var lines []string
@@ -52,11 +58,26 @@ func getKeyboards(c *gin.Context) {
 	}
 }
 
+func getKeyboardsPretty(c *gin.Context) {
+	var lines []string
+	lines = append(lines, fmt.Sprintf("Number of items: %d", mongo.GetPbTechItemsCount()))
+	lines = append(lines, fmt.Sprintf("Number of items with more than one price: %d", mongo.GetPbTechItemsCountWithMoreThanOnePrice()))
+	items := mongo.GetPbTechItemsWithMoreThanOnePrice()
+	for _, result := range items {
+		lines = append(lines, result.Name)
+		for j, price := range result.Price {
+			lines = append(lines, fmt.Sprintf("%d: %s %s", j, result.Date[j], convertToMoney(price)))
+		}
+	}
+	c.IndentedJSON(http.StatusOK, lines)
+}
+
 func main() {
 	mongo.ConnectToMongo()
 
 	router := gin.Default()
 	router.GET("/keyb", getKeyboards)
+	router.GET("/keybpretty", getKeyboardsPretty)
 
 	router.Run("localhost:8080")
 }

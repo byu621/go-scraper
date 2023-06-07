@@ -39,6 +39,42 @@ func ProcessData(itemName string, price int) (bool, string) {
 	return true, "NEW_ITEM"
 }
 
+func GetPbTechItemsCount() int {
+	coll := client.Database("pbtech_item").Collection("keyboards")
+	opts := options.Count().SetHint("_id_")
+	count, err := coll.CountDocuments(context.TODO(), bson.D{}, opts)
+	if err != nil {
+		panic(err)
+	}
+
+	return int(count)
+}
+
+func GetPbTechItemsCountWithMoreThanOnePrice() int {
+	coll := client.Database("pbtech_item").Collection("keyboards")
+	filter := bson.M{"$expr": bson.M{"$gt": []interface{}{bson.M{"$size": "$price"}, 1}}}
+	count, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		panic(err)
+	}
+	return int(count)
+}
+
+func GetPbTechItemsWithMoreThanOnePrice() []PbTechItem {
+	coll := client.Database("pbtech_item").Collection("keyboards")
+	filter := bson.M{"$expr": bson.M{"$gt": []interface{}{bson.M{"$size": "$price"}, 1}}}
+	cursor, err := coll.Find(context.TODO(), filter)
+	if err != nil {
+		panic(err)
+	}
+
+	var results []PbTechItem
+	if err = cursor.All(context.TODO(), &results); err != nil {
+		panic(err)
+	}
+	return results
+}
+
 func checkIfItemExists(itemName string) (*PbTechItem, error) {
 	coll := client.Database("pbtech_item").Collection("keyboards")
 	filter := bson.D{{Key: "name", Value: itemName}}
