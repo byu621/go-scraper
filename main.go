@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -79,5 +80,16 @@ func main() {
 	router.GET("/keyb", getKeyboards)
 	router.GET("/keybpretty", getKeyboardsPretty)
 
-	router.Run("localhost:8080")
+	var port = envPortOr("8080")
+
+	router.Run(fmt.Sprintf("localhost%s", port))
 }
+
+func envPortOr(port string) string {
+	// If `PORT` variable in environment exists, return it
+	if envPort := os.Getenv("PORT"); envPort != "" {
+	  return ":" + envPort
+	}
+	// Otherwise, return the value of `port` variable from function argument
+	return ":" + port
+  }
