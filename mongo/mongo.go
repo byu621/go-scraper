@@ -3,7 +3,6 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -116,7 +115,8 @@ func addNewPrice(id primitive.ObjectID, price int) {
 func ConnectToMongo() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		fmt.Println("NO .env file")
+		// log.Fatalln("Error loading .env file")
 	}
 
 	// Use the SetServerAPIOptions() method to set the Stable API version to 1
